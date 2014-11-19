@@ -111,6 +111,7 @@ colnames(fsites) <- "host_url"
 images   <- list()
 miss_idx <- list()
 outliers <- list()
+temp     <- list()
 
 set.seed(123456)
 ## Collecting missing value row numbers
@@ -163,12 +164,131 @@ write.table(x=df, file=getDat)
 site_ranks <- ddply(df, .(host_url)
                     , function(db){
                       uniq_user     <- length(unique(db$ip_addr))
-                      num_viewed    <- sum(is_viewed)
+                      num_viewed    <- sum(db$is_viewed)
                       view_per_user <- num_viewed / uniq_user
                       
                       res <- c("uniq_user"       = uniq_user
-                               , "num_viewed"    = num_viewed
+                               , "num_ad_viewed" = num_viewed
                                , "view_per_user" = view_per_user
                                )
                       return(res)
                     })
+##
+site_ranks             <- arrange(site_ranks, desc(view_per_user), desc(num_ad_viewed))
+site_ranks$rank        <- 1:nrow(site_ranks)
+site_ranks$url         <- sapply(site_ranks$host_url, function(x) strsplit(x, split = "//")[[1]][2])
+site_ranks$fraud_label <- 0
+
+site_ranks$fraud_label[which(site_ranks$url %in% fsites$host_url)] <- 1
+site_ranks$fraud_label <- as.integer(site_ranks$fraud_label)
+
+images$sites_plot <-  ggplot(site_ranks, aes(log(uniq_user), log(view_per_user), color=fraud_label)) + 
+                        geom_point(alpha = .5, aes(size=fraud_label * 3 + 10 ))
+ggsave(filename = getDataPath("sites_plot.png", dir = dir$output), plot = images$sites_plot
+       , width = 10, height = 8)
+## ################################### ##
+## CONSTRUCT VISITIMG TEMPORAL PATTERN ##
+## ################################### ##
+site_ts <- ddply(df, .(host_url, sec_idx)
+                 , function(ds){
+                   uniq_user <- nrow(ds$ip_addr)
+                   tot_user  <- sum(ds$is_viewed)
+                   res       <- c("uniq_user"    = uniq_user
+                                  , "tot_viewed" = tot_user)
+                   return(res)
+                 })
+
+## time series
+temp$userGT100                 <- subset(site_ts, host_url %in% subset(site_ranks, uniq_user >= 100)$host_url)
+temp$userGT100$factor_host_url <- as.factor(temp$userGT100$host_url)
+temp$userGT100$url             <- sapply(temp$userGT100$host_url, function(x) strsplit(x, split = "//")[[1]][2])
+temp$userGT100$fraud_label     <- 0
+
+temp$userGT100$fraud_label[temp$userGT100$url %in% fsites$host_url] <- 1
+
+
+images$sites_ts <- ggplot(data = temp$userGT100, aes(x = sec_idx, y = tot_viewed, group = host_url)) + 
+                    geom_line(alpha = .3, aes(colors = factor_host_url)) + facet_wrap( ~ host_url)
+  
+ggsave(filename = getDataPath("sites_uniquserGT100_ts.png", dir = dir$output), plot = images$sites_ts
+       , width = 25, height = 8)
+
+## ############################# ## 
+## PLOT 
+## ############################# ##
+temp$fraudsite                 <- site_ts
+temp$fraudsite$url             <- sapply(temp$fraudsite$host_url, function(x) strsplit(x, split = "//")[[1]][2])
+temp$fraudsite                 <- subset(temp$fraudsite, url %in% fsites$host_url)
+temp$fraudsite$factor_host_url <- as.factor(temp$fraudsite$host_url)
+
+images$fraud_sites <- ggplot(data = temp$fraudsite, aes(x = sec_idx, y = tot_viewed, group = host_url)) + 
+                    geom_line(alpha = .7, aes(colors = factor_host_url)) + facet_wrap( ~ host_url)
+ggsave(filename = getDataPath("fraud_sites_ts.png", dir = dir$output), plot = images$sites_ts
+       , width = 25, height = 8)
+
+## ############################ ##
+## botnet IP Address Detection  ##
+##                              ##
+## INVESTIGATE:                 ## 
+## fraudster visits pattern     ##
+##                              ##
+## ############################ ##
+ip_sum <- list()
+
+df$url <- sapply(df$host_url, function(x) strsplit(x, split = "//")[[1]][2])
+fdf    <- subset(df, url %in% fsites$host_url)
+
+## ###################################### ##
+## SUMMARIZE Visitor IP-wise information  ##
+## of Fraud sites                         ##
+## ###################################### ##
+ip_sum <- ddply(subset(df, ip_addr %in% unique(fdf$ip_addr) )
+                , .(ip_addr)
+                , function(db){
+                  num_sites_visited <- length(unique(db$host_url))
+                  num_ad_viewed     <- sum(db$is_viewed)
+                  num_visits        <- nrow(db)
+                  ad_viewed_rate    <- num_ad_viewed / num_visits
+                  res               <- c("num_sites_visited" = num_sites_visited
+                                         , "num_ad_viewed"   = num_ad_viewed
+                                         , "num_visits"      = num_visits
+                                         , "ad_viewed_rate"  = ad_viewed_rate )
+                  return(res)
+                })
+
+all_ip_sum <- ddply(df
+                    , .(ip_addr)
+                    , function(db){
+                      num_sites_visited <- length(unique(db$host_url))
+                      num_ad_viewed     <- sum(db$is_viewed)
+                      num_visits        <- nrow(db)
+                      ad_viewed_rate    <- num_ad_viewed / num_visits
+                      res               <- c("num_sites_visited" = num_sites_visited
+                                             , "num_ad_viewed"   = num_ad_viewed
+                                             , "num_visits"      = num_visits
+                                             , "ad_viewed_rate"  = ad_viewed_rate )
+                      return(res)
+                    })
+
+ip_sum     <- arrange(ip_sum,     desc(ad_viewed_rate))
+all_ip_sum <- arrange(all_ip_sum, desc(ad_viewed_rate))
+
+all_ip_sum$log_num_ad_viewed                                 <- log(all_ip_sum$num_ad_viewed)
+all_ip_sum$high_viewed_rate                                  <- 0
+all_ip_sum$high_viewed_rate[all_ip_sum$ad_viewed_rate >= .9] <- 1
+## Label IP address which visited the fraudsite
+all_ip_sum$visited_fsite                                          <- 0
+all_ip_sum$visited_fsite[all_ip_sum$ip_addr %in% ip_sum$ip_addr ] <- 1
+
+## Plot ad_viwed_rate
+## ggplot(all_ip_sum, aes(x = ad_viewed_rate, group=high_viewed_rate)) + geom_histogram(alpha=.5)
+## ggplot(all_ip_sum, aes(x = ad_viewed_rate, y = log_num_ad_viewed) )+ 
+##       geom_point(alpha = .3, aes(size =  5 + 10 * num_sites_visited, color = visited_fsite))
+hist(all_ip_sum$ad_viewed_rate, main = "Histogram of Ad View Rate per IP")
+hist(log(all_ip_sum$num_ad_viewed), border = 'black')
+
+## median #ad visited per IP: 2
+high_risk_ip <- subset(all_ip_sum, num_ad_viewed >= 2 & ad_viewed_rate > .95)[, c("ip_addr", "num_sites_visited", "num_ad_viewed", "ad_viewed_rate")] 
+high_risk_ip <- arrange(high_risk_ip, desc(num_ad_viewed))
+write.table(high_risk_ip, file = getDataPath(filename = "high_risk_ip.csv", dir = dir$output)
+            , col.names = TRUE, row.names = TRUE, sep = ",")

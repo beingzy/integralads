@@ -50,9 +50,14 @@ rm(list = c('file01', 'file02'))
 ## Create new variables     ##
 ## ######################## ##
 ## 1. decompose ip_addr
-temp <- sapply(db$ip_address, function(x) strsplit(x = x, split = ".", fixed = TRUE)[[1]] )
-temp <- as.data.frame(matrix(unlist(temp), nrow=length(temp), byrow=T), stringsAsFactors = FALSE)
-
+#temp <- sapply(db$ip_address, function(x) strsplit(x = x, split = ".", fixed = TRUE)[[1]] )
+#temp <- as.data.frame(matrix(unlist(temp), nrow=length(temp), byrow=T), stringsAsFactors = FALSE)
+temp <- matrix(0, nrow = nrow(db), ncol = 4)
+for(i.row in 1:nrow(db)){
+  ip_addr       <- db$ip_address[i.row]
+  temp[i.row, ] <- strsplit(x = ip_addr, split = ".", fixed = TRUE)[[1]]
+}
+   
 db$ip_c1 <- temp[, 1]
 db$ip_c2 <- temp[, 2]
 db$ip_c3 <- temp[, 3]
@@ -87,9 +92,11 @@ sumn$ipcount_c12 <- ddply(db
                             tot_records <- nrow(unique(df[, "ip_address"]))
                             res     <- c("uniq_ip" = uniq_ip
                                          , "tot_profile" = tot_profile
-                                         , "tot_obs" = tot_obs)
+                                         , "tot_obs" = tot_records)
                             return(res)
                           })
 
 sumn$ipcount_c12 <- arrange(sumn$ipcount_c12, desc(tot_profile))
 
+plot(x = 3:nrow(sumn$ipcount_c12), y = sumn$ipcount_c12$tot_profile[-c(1:2)])
+boxplot(sumn$ipcount_c12$tot_profile)
