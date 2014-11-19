@@ -156,7 +156,7 @@ df$nwk_lattency_log1p <- log1p(df$network_latency)
 ## ######################### ##
 ## sapply(df$detected_agent_str, function(x) strsplit(x, split=" ")[[1]][1])
 
-write.table(x=df, file=getDat)
+write.table(x=df, file=getDataPath(filename="processed_fraud.csv", dir=dir$data), sep=",", col.names = TRUE, row.names=FALSE)
 ## ######################### ##
 ## SUMMARIZE INFORMATION     ##
 ## ######################### ##
