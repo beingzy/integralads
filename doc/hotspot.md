@@ -1,8 +1,12 @@
 Data limitation: the data collection covers a short time window, which is not sufficient to be utilized to re-construct the traffic pattern for an IP address block.
+
+Hypothesis:
+
+
 Assumption: 
 a. IP address bock reservation scheme:
-xxx.xxx.-.- style IP address reservation: (e.g. all ip address starting with 123.234 are reserved for a particular organization and considered as hotspot)
-[xxx.xxx.xxx.-  , xxx.xxx.xxx.-] style IP address reservation: (e.g. all ip addresses falling on the range between 123.234.115.001 – 123.234.120.254 are reserved and considered as hotspot) 
+ * xxx.xxx.-.- style IP address reservation: (e.g. all ip address starting with 123.234 are reserved for a particular organization and considered as hotspot)
+ * [xxx.xxx.xxx.-  , xxx.xxx.xxx.-] style IP address reservation: (e.g. all ip addresses falling on the range between 123.234.115.001 – 123.234.120.254 are reserved and considered as hotspot) 
 
 b. Unique user identifier: 
 Ip_address + user_agent_str is a proxy for unique user identifier
