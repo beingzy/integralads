@@ -1,7 +1,7 @@
 ### Overall Discussion
 #### Task01: Sites having substantial amount of fraudulent traffic:
 a. Scatterplot of the rate of #ad_viwed per user vs. number of unique users (fraud site highlighted with blue bubbles)
-![log(ad_veiwed_per_user) vs. log(uniq_user)](sites_plot.png)
+![log(ad_veiwed_per_user) vs. log(uniq_user)](/output/sites_plot.png)
 *Discussion*: 
   (1) Fraud sites tends to have a high ads viwed rate (#ad_viewed / #unique users)
   (2) The website having a larger visitor base is less likely to carry substantail fraudulent visits
