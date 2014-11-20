@@ -210,7 +210,7 @@ temp$userGT100$fraud_label[temp$userGT100$url %in% fsites$host_url] <- 1
 
 
 images$sites_ts <- ggplot(data = temp$userGT100, aes(x = sec_idx, y = tot_viewed, group = host_url)) + 
-                    geom_line(alpha = .3, aes(colors = factor_host_url)) + facet_wrap( ~ host_url)
+                    geom_line(alpha = .3, aes(colors = factor_host_url)) + facet_wrap( ~ url)
   
 ggsave(filename = getDataPath("sites_uniquserGT100_ts.png", dir = dir$output), plot = images$sites_ts
        , width = 25, height = 8)
@@ -223,9 +223,14 @@ temp$fraudsite$url             <- sapply(temp$fraudsite$host_url, function(x) st
 temp$fraudsite                 <- subset(temp$fraudsite, url %in% fsites$host_url)
 temp$fraudsite$factor_host_url <- as.factor(temp$fraudsite$host_url)
 
-images$fraud_sites <- ggplot(data = temp$fraudsite, aes(x = sec_idx, y = tot_viewed, group = host_url)) + 
-                    geom_line(alpha = .7, aes(colors = url)) + facet_wrap( ~ url)
-ggsave(filename = getDataPath("fraud_sites_ts.png", dir = dir$output), plot = images$sites_ts
+images$fraud_sites <- ggplot(data = temp$fraudsite, aes(x = sec_idx, fill = tot_viewed, group = host_url)) + 
+                      geom_line(alpha = .7, aes(colors = url)) +  
+                      facet_wrap( ~ url)  
+                     
+##images$fraud_sites <- ggplot(temp$fraudsite, aes(x=sec_idx, group=url)) + 
+##                      geom_bar(aes(fill=tot_viewed)) +
+##                      facet_wrap( ~ url)
+ggsave(filename = getDataPath("fraud_sites_ts.png", dir = dir$output), plot = images$fraud_sites
        , width = 8, height = 8)
 
 ## ############################ ##
