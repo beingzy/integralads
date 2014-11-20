@@ -123,7 +123,8 @@ miss_idx$work_latency <- which(is.na(df$network_latency))
 ## ########################## ##
 ## Missing Value Imputation   ##
 ## ########################## ##
-images$num_plugins_by_browser <- ggplot(df[-miss_idx$num_plugins, ], aes(x=num_plugins, fill=browser)) + geom_density(alpha=.3) 
+images$num_plugins_by_browser <- ggplot(df[-miss_idx$num_plugins, ], aes(x=num_plugins, fill=browser)) + 
+                                  geom_histogram(alpha=.5) 
 ggsave(plot=images$num_plugins_by_browser, filename=getDataPath(filename="ggplot_num_plugins_hist.png", dir=dir$output))
 
 ## Impute mssing data
@@ -186,6 +187,7 @@ images$sites_plot <-  ggplot(site_ranks, aes(log(uniq_user), log(view_per_user),
                         geom_point(alpha = .5, aes(size=fraud_label * 3 + 10 ))
 ggsave(filename = getDataPath("sites_plot.png", dir = dir$output), plot = images$sites_plot
        , width = 10, height = 8)
+
 ## ################################### ##
 ## CONSTRUCT VISITIMG TEMPORAL PATTERN ##
 ## ################################### ##
@@ -222,9 +224,9 @@ temp$fraudsite                 <- subset(temp$fraudsite, url %in% fsites$host_ur
 temp$fraudsite$factor_host_url <- as.factor(temp$fraudsite$host_url)
 
 images$fraud_sites <- ggplot(data = temp$fraudsite, aes(x = sec_idx, y = tot_viewed, group = host_url)) + 
-                    geom_line(alpha = .7, aes(colors = factor_host_url)) + facet_wrap( ~ host_url)
+                    geom_line(alpha = .7, aes(colors = url)) + facet_wrap( ~ url)
 ggsave(filename = getDataPath("fraud_sites_ts.png", dir = dir$output), plot = images$sites_ts
-       , width = 25, height = 8)
+       , width = 8, height = 8)
 
 ## ############################ ##
 ## botnet IP Address Detection  ##
